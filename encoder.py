@@ -1,4 +1,6 @@
 import pickle
+import numpy as np
+import pymorphy2, re
 from typing import List, Dict
 
 
@@ -13,10 +15,11 @@ def parse_model(file_path: str) -> Dict[str, List[float]]:
             word = items[0]
             embeding = parse_embeding(items[1:])
 
-            if (len(embeding) == dim):
+            if (embeding.size == dim):
                 res[word] = embeding
 
-    return res if len(res) == words else {}
+    res['default'] = np.empty(300).fill(0)    
+    return res if len(res) == words + 1 else {}
 
 
 def load_file(file_path: str) -> List[str]:
@@ -26,4 +29,41 @@ def load_file(file_path: str) -> List[str]:
     return data
 
 def parse_embeding(items: List[str]) -> List[float]:
-    return list(map(lambda x: float(x), items))
+    return np.fromiter(map(lambda x: float(x), items), dtype = float)
+
+def check_in_w2v(word: str, model: Dict[str, np.ndarray], ma) -> str:
+    pos = {'ADJF':'ADJ', 'ADJS':'ADJ', 'COMP':'ADJ', 'ADVB':'ADV', 'INFN':'VERB', 'NUMR':'NUM', \
+       'PRTF':'VERB', 'PRTS':'VERB', 'GRND':'VERB', 'NPRO':'PRON', 'CONJ':'CCONJ'}
+
+    part_of_speech = str(ma.parse(word)[0].tag.POS).upper()
+    try:
+      part_of_speech = pos[part_of_speech]
+    except:
+      pass
+
+    word += "_" + part_of_speech
+    if word in model:
+        return word
+    else:
+        return ""
+
+def clean_text(text: str, model: Dict[str, np.ndarray]) -> str:
+    ma = pymorphy2.MorphAnalyzer()
+
+    text = text.replace("\\", " ").replace(u"╚", " ").replace(u"╩", " ").replace("«", '').replace("»", '')
+    text = text.lower()
+    text = re.sub('\-\s\r\n\s{1,}|\-\s\r\n|\r\n', '', text) 
+    text = re.sub('[.,:;_%©?*,!@#$%^&()\d]|[+=]|[[]|[]]|[/]|"|\s{2,}|-', ' ', text)
+    text = " ".join(ma.parse(word)[0].normal_form for word in text.split())
+    text = ' '.join(word for word in text.split() if len(word)>3)
+    all_words = text.split()
+    all_correct_words = ''
+
+    for word in all_words:
+        new_word = check_in_w2v(word, model, ma)
+        if new_word != '':
+            if all_correct_words=='':
+                all_correct_words += new_word
+            else:
+                all_correct_words += ' '+new_word
+    return all_correct_words
