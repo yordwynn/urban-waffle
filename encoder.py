@@ -18,15 +18,18 @@ def parse_model(file_path: str) -> Dict[str, List[float]]:
             if (embeding.size == dim):
                 res[word] = embeding
 
-    res['default'] = np.empty(300).fill(0)    
-    return res if len(res) == words + 1 else {}
+    return res if len(res) == words else {}
 
 
-def load_file(file_path: str) -> List[str]:
+def load_from_pickle(file_path: str) -> List[str]:
     with open(file_path, 'rb') as f:
         data = pickle.load(f)
 
     return data
+
+def save_to_pickle(data, file_path: str):
+    with open(file_path, 'wb') as f:
+        pickle.dump(data, f)
 
 def parse_embeding(items: List[str]) -> List[float]:
     return np.fromiter(map(lambda x: float(x), items), dtype = float)
@@ -50,7 +53,7 @@ def check_in_w2v(word: str, model: Dict[str, np.ndarray], ma) -> str:
 def clean_text(text: str, model: Dict[str, np.ndarray]) -> str:
     ma = pymorphy2.MorphAnalyzer()
 
-    text = text.replace("\\", " ").replace(u"╚", " ").replace(u"╩", " ").replace("«", '').replace("»", '')
+    text = text.replace("\\", " ").replace(u"╚", " ").replace(u"╩", " ").replace("«", '').replace("»", '').replace("…", '')
     text = text.lower()
     text = re.sub('\-\s\r\n\s{1,}|\-\s\r\n|\r\n', '', text) 
     text = re.sub('[.,:;_%©?*,!@#$%^&()\d]|[+=]|[[]|[]]|[/]|"|\s{2,}|-', ' ', text)
@@ -67,3 +70,10 @@ def clean_text(text: str, model: Dict[str, np.ndarray]) -> str:
             else:
                 all_correct_words += ' '+new_word
     return all_correct_words
+
+def encode_text(text: str, model: Dict[str, np.ndarray], shape: (int, int)) -> np.ndarray:
+    res = np.zeros(shape)
+    for i, word in enumerate(text.split()):
+        res[i,:] = model[word]
+
+    return res
