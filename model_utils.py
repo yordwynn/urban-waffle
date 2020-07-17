@@ -50,7 +50,8 @@ def train(model, loader_train, loader_val, optimizer, device, epochs=1, log=Fals
 
 def eval_model(loader, model, device):
     model = model.to(device=device)
-    res = []
+    pred = []
+    groundtruth = []
     model.eval()  # set model to evaluation mode
     with torch.no_grad():
         for x, y in loader:
@@ -58,5 +59,6 @@ def eval_model(loader, model, device):
             y = y.to(device=device, dtype=torch.long)
             scores = model(x)
             _, preds = scores.max(1)
-            res += preds.tolist()
-    return res
+            pred += preds.tolist()
+            groundtruth += y.tolist()
+    return pred, groundtruth
