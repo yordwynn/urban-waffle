@@ -8,7 +8,7 @@ def check_accuracy(loader, model, device):
     with torch.no_grad():
         for x, y in loader:
             x = x.to(device=device)
-            y = y.to(device=device)
+            y = y.to(device=device, dtype=torch.long)
             scores = model(x)
             _, preds = scores.max(1)
             num_correct += (preds == y).sum()
@@ -16,7 +16,7 @@ def check_accuracy(loader, model, device):
         acc = float(num_correct) / num_samples
         print('Got %d / %d correct (%.2f)' % (num_correct, num_samples, 100 * acc))
 
-def train(model, loader_train, loader_val, optimizer, device, epochs=1, log=False, print_every=10):
+def train(model, loader_train, loader_val, optimizer, device, epochs=1, log=False, print_every=100):
     """
     Train a model on CIFAR-10 using the PyTorch Module API.
     
@@ -32,7 +32,7 @@ def train(model, loader_train, loader_val, optimizer, device, epochs=1, log=Fals
         for t, (x, y) in enumerate(loader_train):
             model.train()
             x = x.to(device=device)
-            y = y.to(device=device)
+            y = y.to(device=device, dtype=torch.long)
 
             scores = model(x)
             loss = cross_entropy(scores, y)
@@ -47,3 +47,16 @@ def train(model, loader_train, loader_val, optimizer, device, epochs=1, log=Fals
                 print('Iteration %d, loss = %.4f' % (t, loss.item()))
                 check_accuracy(loader_val, model, device)
                 print()
+
+def eval_model(loader, model, device):
+    model = model.to(device=device)
+    res = []
+    model.eval()  # set model to evaluation mode
+    with torch.no_grad():
+        for x, y in loader:
+            x = x.to(device=device)
+            y = y.to(device=device, dtype=torch.long)
+            scores = model(x)
+            _, preds = scores.max(1)
+            res += preds.tolist()
+    return res
