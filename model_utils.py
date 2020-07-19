@@ -45,8 +45,8 @@ def train(model, loader_train, loader_val, optimizer, device, epochs=1, log=Fals
 
             if t % print_every == 0:
                 print('Iteration %d, loss = %.4f' % (t, loss.item()))
-                check_accuracy(loader_val, model, device)
-                print()
+                #check_accuracy(loader_val, model, device)
+                #print()
 
 def eval_model(loader, model, device):
     model = model.to(device=device)
